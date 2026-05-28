@@ -44,15 +44,6 @@ source env/bin/activate
 pip install -r requirements.txt --upgrade
 
 
-OCR/
-├── run_ocr.py
-├── requirements.txt
-└── scanned_inputs/
-    ├── Case_101/
-    │   ├── document1.pdf
-    │   └── document2.pdf
-    └── Case_202/
-        └── medical_record.pdf
 
 python run_ocr.py
 
