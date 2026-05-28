@@ -35,3 +35,34 @@ Tesseract Text Layer Generation: It passes those images to the Tesseract OCR eng
 Layer Integration & Optimization: The script pieces the original scanned image and the new invisible text layer back together. It applies optimization parameters (optimize=1) to compress the image data so your output files don't balloon in size.
 
 Safe Write: The finalized, fully searchable PDF is written safely into its designated ocr_outputs/Case_Number/ destination folder.
+
+
+Bash
+cd ~/OCR
+source env/bin/activate
+
+pip install -r requirements.txt --upgrade
+
+
+OCR/
+├── run_ocr.py
+├── requirements.txt
+└── scanned_inputs/
+    ├── Case_101/
+    │   ├── document1.pdf
+    │   └── document2.pdf
+    └── Case_202/
+        └── medical_record.pdf
+
+python run_ocr.py
+
+
+
+
+
+
+
+
+
+
+
