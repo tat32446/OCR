@@ -1,59 +1,81 @@
-Phase 1: Folder Mapping and Scanning (os.walk)
-Instead of just looking at one flat folder, the script uses a depth-first search to map your entire directory tree.
+Parallel Case File OCR Processor
+An advanced, multi-core Python utility designed to batch-process scanned, image-only PDFs across nested directories. It dynamically reads documents from case-specific input folders, applies an invisible searchable text layer using Tesseract OCR, and automatically mirrors the exact directory structure into an output destination.
 
-Directory Discovery: The script targets ./scanned_inputs. Using os.walk, it dives into every subfolder it finds (e.g., Case_001, Case_999).
+🏗️ Folder Architecture
+The script automatically detects and replicates your multi-level file structures. You only need to supply the inputs; the outputs are generated dynamically on demand.
 
-Path Calculation: For every PDF it discovers, it calculates its relative path (e.g., Case_001/document.pdf). It uses this relative path to map exactly where the output should go (./ocr_outputs/Case_001/document.pdf).
+Plaintext
+OCR/
+├── run_ocr.py               # The main Python script
+├── requirements.txt         # Python dependencies
+└── scanned_inputs/          # Put your raw scanned files here
+    ├── Case_001/
+    │   ├── scan1.pdf
+    │   └── scan2.pdf
+    └── Case_002/
+        └── record.pdf
 
-Auto-Folder Creation: It checks if the destination folder exists inside ocr_outputs. If it doesn't, Python automatically generates it on the fly (os.makedirs).
-
-Deduplication Check: Before doing any heavy lifting, it looks inside the output folder. If ocr_outputs/Case_001/document.pdf already exists, it prints a message skipping it. This saves you massive amounts of time on subsequent runs. If it's missing, it adds the file to a processing master list (the queue).
-
-Phase 2: High-Speed Multi-Core Queueing (ProcessPoolExecutor)
-Standard Python scripts process files one by one. If you have 6 files and each takes 20 seconds, you wait 2 minutes. This script bypasses that bottleneck using parallel processing.
-
-                  [ Master Queue: 6 PDF Tasks ]
-                                |
-         +----------------------+----------------------+
-         |                      |                      |
-  [ Core 1 Active ]      [ Core 2 Active ]      [ Core 3 Active ]
-     Processes:             Processes:             Processes:
-     Case_001/doc1.pdf      Case_001/doc2.pdf      Case_002/doc1.pdf
-Hardware Detection: The script checks how many CPU cores your machine has.
-
-Task Distribution: It spins up a pool of background processes (ProcessPoolExecutor). If you have a 6-core processor, it handles up to 6 PDFs simultaneously.
-
-Asynchronous Monitoring: As individual CPU cores finish a file, they hand back a "Success" or "Failed" signal and immediately pull the next available PDF from the master queue.
-
-Phase 3: The OCR Engine Pipeline (ocrmypdf)
-When a file enters an active CPU core, the ocrmypdf library handles the actual heavy-duty document transformation:
-
-Image Extraction: The script opens the input PDF and extracts the raw scanned images from the pages.
-
-Tesseract Text Layer Generation: It passes those images to the Tesseract OCR engine. Tesseract analyzes the pixels, identifies text characters, maps their precise coordinates, and creates an invisible layer of digital, selectable text.
-
-Layer Integration & Optimization: The script pieces the original scanned image and the new invisible text layer back together. It applies optimization parameters (optimize=1) to compress the image data so your output files don't balloon in size.
-
-Safe Write: The finalized, fully searchable PDF is written safely into its designated ocr_outputs/Case_Number/ destination folder.
-
+=========== AUTOMATICALLY GENERATED ON RUN ===========
+└── ocr_outputs/             # Mirrored fully searchable results
+    ├── Case_001/
+    │   ├── scan1.pdf        <-- Searchable / Selectable text
+    │   └── scan2.pdf
+    └── Case_002/
+        └── record.pdf
+🚀 Step-by-Step Setup & Execution
+1. Install System Dependencies
+The Python libraries require the core binary OCR engine to be present on your Linux operating system. Install them via apt:
 
 Bash
+sudo apt update
+sudo apt install ocrmypdf tesseract-ocr -y
+2. Activate Virtual Environment & Install Requirements
+Navigate to your project directory, turn on your isolated virtual environment, and install your requirements.txt configurations:
+
+Bash
+# Navigate to project root
 cd ~/OCR
+
+# Activate environment
 source env/bin/activate
 
+# Install/upgrade python libraries
 pip install -r requirements.txt --upgrade
+3. Run the OCR Pipeline
+Place your target case folders containing unsearchable PDFs into scanned_inputs/ and fire up the engine:
 
-
-
+Bash
 python run_ocr.py
+🛠️ Script Processing Pipeline
+When you run the script, it executes through three distinct mechanical phases:
 
+[ Phase 1: Directory Discovery ] 
+       Uses os.walk to catalog PDFs inside "scanned_inputs/Case_*".
+       Checks "ocr_outputs/" to skip files that were completed in past runs.
+                      │
+                      ▼
+[ Phase 2: Concurrent Core Allocation ]
+       Distributes files across all available CPU cores via ProcessPoolExecutor.
+       Processes up to 4-8 files simultaneously (depending on your machine hardware).
+                      │
+                      ▼
+[ Phase 3: OCR Engine & Write ]
+       Extracts raster graphics -> Generates hOCR fonts layer -> 
+       Optimizes final file weights -> Writes cleanly into matching output paths.
+🔍 Troubleshooting & System Fixes
+⚠️ Issue: unrecognized arguments: --fast-logs
+Cause: This parameter belongs to modern versions of ocrmypdf and is completely unsupported on older releases compiled for Python 3.8.
 
+Fix: Ensure fast_logs=True has been deleted from your ocrmypdf.ocr() argument dictionary inside run_ocr.py.
 
+⚠️ Issue: ImportError: cannot import name 'PdfMatrix' from 'pikepdf'
+Cause: Version mismatch within your environment dependencies (pikepdf updated past the threshold your version of ocrmypdf can read).
 
+Fix: Re-align your environment packages using explicit limits:
 
+Bash
+pip install "pikepdf>=6.0.0,<7.0.0" "ocrmypdf==14.4.0" --force-reinstall
 
-
-
-
-
-
+### ⚠️ Issue: `CryptographyDeprecationWarning`
+* **Warning Context:** `Python 3.8 is no longer supported by the Python core team...`
+* **Fix:** This is a non-breaking deprecation logger message from Python's core security
